@@ -1,4 +1,5 @@
-import { Link, Outlet, useLocation } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import {
   LayoutDashboard,
   Package,
@@ -19,7 +20,7 @@ const nav = [
   { to: "/itens", label: "Itens", icon: Boxes },
 ] as const;
 
-export function AppLayout() {
+export function AppLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   return (
     <div className="flex min-h-screen bg-background">
