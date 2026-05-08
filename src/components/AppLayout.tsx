@@ -68,7 +68,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           ))}
         </header>
         <main className="flex-1 p-6 md:p-8 overflow-x-hidden">
-          <Outlet />
+          {children}
         </main>
       </div>
     </div>
