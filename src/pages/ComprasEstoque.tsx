@@ -260,7 +260,72 @@ export default function ComprasEstoque() {
           onConfirm={handleRetornarFornecedor}
         />
       ) : null}
+      {configOpen ? (
+        <ConfigConexaoModal onClose={() => setConfigOpen(false)} />
+      ) : null}
     </main>
+  );
+}
+
+function ConfigConexaoModal({ onClose }: { onClose: () => void }) {
+  const atual = getAppsScriptConfig();
+  const [url, setUrl] = useState(atual.url);
+  const [token, setToken] = useState(atual.token);
+  const [erroModal, setErroModal] = useState<string | null>(null);
+
+  function salvar(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const u = url.trim();
+    const t = token.trim();
+    if (!u) return setErroModal("Informe a URL do Apps Script.");
+    if (!t) return setErroModal("Informe o token de acesso.");
+    try {
+      new URL(u);
+    } catch {
+      return setErroModal("URL inválida.");
+    }
+    setAppsScriptConfig(u, t);
+    onClose();
+  }
+
+  return (
+    <div className="modal-backdrop">
+      <div className="modal" role="dialog" aria-modal="true">
+        <div className="modal-header">
+          <div>
+            <h2>Configurar conexão Apps Script</h2>
+            <p>Os dados ficam apenas no seu navegador (localStorage).</p>
+          </div>
+          <button className="icon-button" type="button" onClick={onClose} aria-label="Fechar">×</button>
+        </div>
+        {erroModal ? <div className="error">{erroModal}</div> : null}
+        <form className="form-grid" onSubmit={salvar}>
+          <label className="full-width">
+            URL do Apps Script
+            <input
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://script.google.com/macros/s/.../exec"
+            />
+          </label>
+          <label className="full-width">
+            Token de acesso
+            <input
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              placeholder="Token configurado no Apps Script"
+            />
+          </label>
+          <div className="notice full-width">
+            Nada é enviado para servidores da Lovable. Os valores ficam salvos apenas neste navegador.
+          </div>
+          <div className="modal-actions full-width">
+            <button className="secondary-button" type="button" onClick={onClose}>Cancelar</button>
+            <button className="primary-button" type="submit">Salvar conexão</button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }
 
