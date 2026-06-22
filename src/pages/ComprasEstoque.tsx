@@ -213,7 +213,13 @@ export default function ComprasEstoque() {
         <button className={`tab-button ${aba === "historico" ? "active" : ""}`} onClick={() => setAba("historico")}>Histórico</button>
       </nav>
 
-      {carregando ? <div className="notice">Carregando dados das planilhas...</div> : null}
+      {!configurado ? (
+        <div className="notice">
+          Conexão com Apps Script não configurada. Clique em <strong>Configurar conexão Apps Script</strong> para informar a URL e o token.
+        </div>
+      ) : null}
+
+      {configurado && carregando ? <div className="notice">Carregando dados das planilhas...</div> : null}
 
       {!carregando && aba === "compras" ? (
         <Compras cards={cards} onEmitirCotacao={setCardSelecionado} />
