@@ -72,7 +72,18 @@ export default function ComprasEstoque() {
   }
 
   useEffect(() => {
-    carregarDados();
+    function syncConfig() {
+      const ok = hasAppsScriptConfig();
+      setConfigurado(ok);
+      if (ok) {
+        carregarDados();
+      } else {
+        setConfigOpen(true);
+      }
+    }
+    syncConfig();
+    window.addEventListener(APPS_SCRIPT_CONFIG_EVENT, syncConfig);
+    return () => window.removeEventListener(APPS_SCRIPT_CONFIG_EVENT, syncConfig);
   }, []);
 
   async function handleCriarCotacao(payload: {
