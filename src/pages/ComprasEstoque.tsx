@@ -13,6 +13,10 @@ import {
   enviarCotacoes,
   retornarFornecedor,
   RetornoFornecedorTipo,
+  getAppsScriptConfig,
+  setAppsScriptConfig,
+  hasAppsScriptConfig,
+  APPS_SCRIPT_CONFIG_EVENT,
 } from "../services/appsScriptClient";
 
 type Aba = "compras" | "cotacoes" | "ordens" | "recebimento" | "historico";
