@@ -165,7 +165,12 @@ export default function ComprasEstoque() {
           <h1>Compras e Estoque</h1>
           <p>Controle de reposição, cotações e recebimentos da Uniclean.</p>
         </div>
-        <span className="status-pill">Modo teste</span>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <span className="status-pill">{configurado ? "Conectado" : "Sem conexão"}</span>
+          <button className="secondary-button" type="button" onClick={() => setConfigOpen(true)}>
+            Configurar conexão Apps Script
+          </button>
+        </div>
       </header>
 
       {erro ? <div className="error">{erro}</div> : null}
