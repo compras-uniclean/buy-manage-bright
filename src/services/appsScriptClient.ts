@@ -155,19 +155,51 @@ export type RetornarFornecedorResponse = {
   envioReal: boolean;
 };
 
-const API_URL = import.meta.env.VITE_APPS_SCRIPT_URL as string | undefined;
-const API_TOKEN = import.meta.env.VITE_APPS_SCRIPT_TOKEN as string | undefined;
+const ENV_URL = import.meta.env.VITE_APPS_SCRIPT_URL as string | undefined;
+const ENV_TOKEN = import.meta.env.VITE_APPS_SCRIPT_TOKEN as string | undefined;
+
+export const APPS_SCRIPT_URL_KEY = 'appsScript.url';
+export const APPS_SCRIPT_TOKEN_KEY = 'appsScript.token';
+export const APPS_SCRIPT_CONFIG_EVENT = 'appsScript.configChanged';
+
+export function getAppsScriptConfig(): { url: string; token: string } {
+  let url = ENV_URL || '';
+  let token = ENV_TOKEN || '';
+  if (typeof window !== 'undefined') {
+    url = window.localStorage.getItem(APPS_SCRIPT_URL_KEY) || url;
+    token = window.localStorage.getItem(APPS_SCRIPT_TOKEN_KEY) || token;
+  }
+  return { url, token };
+}
+
+export function setAppsScriptConfig(url: string, token: string) {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(APPS_SCRIPT_URL_KEY, url);
+  window.localStorage.setItem(APPS_SCRIPT_TOKEN_KEY, token);
+  window.dispatchEvent(new Event(APPS_SCRIPT_CONFIG_EVENT));
+}
+
+export function clearAppsScriptConfig() {
+  if (typeof window === 'undefined') return;
+  window.localStorage.removeItem(APPS_SCRIPT_URL_KEY);
+  window.localStorage.removeItem(APPS_SCRIPT_TOKEN_KEY);
+  window.dispatchEvent(new Event(APPS_SCRIPT_CONFIG_EVENT));
+}
+
+export function hasAppsScriptConfig(): boolean {
+  const { url, token } = getAppsScriptConfig();
+  return Boolean(url && token);
+}
 
 function getConfig() {
-  if (!API_URL) {
-    throw new Error('Configure VITE_APPS_SCRIPT_URL no ambiente do app.');
+  const { url, token } = getAppsScriptConfig();
+  if (!url) {
+    throw new Error('Configure a URL do Apps Script clicando em "Configurar conexão Apps Script".');
   }
-
-  if (!API_TOKEN) {
-    throw new Error('Configure VITE_APPS_SCRIPT_TOKEN no ambiente do app.');
+  if (!token) {
+    throw new Error('Configure o token do Apps Script clicando em "Configurar conexão Apps Script".');
   }
-
-  return { apiUrl: API_URL, token: API_TOKEN };
+  return { apiUrl: url, token };
 }
 
 async function request<T>(
