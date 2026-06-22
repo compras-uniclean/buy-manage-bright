@@ -35,9 +35,11 @@ export default function ComprasEstoque() {
   const [cardSelecionado, setCardSelecionado] = useState<DashboardCard | null>(null);
   const [fornecedorRetorno, setFornecedorRetorno] = useState<FornecedorRetornoSelecionado | null>(null);
   const [cotacaoEnviando, setCotacaoEnviando] = useState<string | null>(null);
-  const [carregando, setCarregando] = useState(true);
+  const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState<string | null>(null);
+  const [configOpen, setConfigOpen] = useState(false);
+  const [configurado, setConfigurado] = useState(false);
 
   const resumo = useMemo(() => {
     const totalComprar = cards.reduce((acc, item) => acc + item.qtdAComprar, 0);
