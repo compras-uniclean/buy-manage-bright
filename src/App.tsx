@@ -1,5 +1,5 @@
-import ComprasEstoque from "./pages/ComprasEstoque";
+import ComprasEstoqueOficial from "./pages/ComprasEstoqueOficial";
 
 export default function App() {
-  return <ComprasEstoque />;
+  return <ComprasEstoqueOficial />;
 }
