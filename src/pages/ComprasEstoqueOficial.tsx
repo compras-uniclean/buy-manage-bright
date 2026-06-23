@@ -60,7 +60,7 @@ export default function ComprasEstoque() {
         listarCotacoes(30),
         getFornecedores("", 200),
       ]);
-      setCards(dashboard.cards);
+      setCards(prepararCardsComprar(dashboard.cards || []));
       setListas(listasBasicas);
       setCotacoes(cotacoesResp.cotacoes);
       setFornecedores(fornResp.fornecedores.filter((f) => f.email));
