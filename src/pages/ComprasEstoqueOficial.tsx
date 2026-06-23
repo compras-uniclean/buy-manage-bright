@@ -329,11 +329,18 @@ function ConfigConexaoModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+const TIPO_ORDEM: Record<string, number> = { "01": 0, "02": 1, "00": 2, "10": 3 };
+function ordemTipo(tipo: string): number {
+  const chave = (tipo || "").trim().slice(0, 2);
+  return TIPO_ORDEM[chave] ?? 99;
+}
+
 function Compras({ cards, onEmitirCotacao }: { cards: DashboardCard[]; onEmitirCotacao: (i: DashboardCard) => void }) {
   if (!cards.length) return <div className="notice">Nenhum item com necessidade de compra foi encontrado.</div>;
+  const cardsOrdenados = [...cards].sort((a, b) => ordemTipo(a.tipo) - ordemTipo(b.tipo));
   return (
     <section className="card-grid">
-      {cards.map((item) => (
+      {cardsOrdenados.map((item) => (
         <article className="card" key={`${item.codigo}-${item.descricao}`}>
           <h2>{item.descricao}</h2>
           <p><strong>Código:</strong> {item.codigo}</p>
