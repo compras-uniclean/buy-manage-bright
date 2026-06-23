@@ -60,7 +60,7 @@ export default function ComprasEstoque() {
         listarCotacoes(30),
         getFornecedores("", 200),
       ]);
-      setCards(dashboard.cards);
+      setCards(prepararCardsComprar(dashboard.cards || []));
       setListas(listasBasicas);
       setCotacoes(cotacoesResp.cotacoes);
       setFornecedores(fornResp.fornecedores.filter((f) => f.email));
@@ -329,15 +329,38 @@ function ConfigConexaoModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-const TIPO_ORDEM: Record<string, number> = { "01": 0, "02": 1, "00": 2, "10": 3 };
+function normalizarTexto(value: string) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function precisaReposicao(card: DashboardCard) {
+  return normalizarTexto(card.situacao) === "reposicao";
+}
+
 function ordemTipo(tipo: string): number {
-  const chave = (tipo || "").trim().slice(0, 2);
-  return TIPO_ORDEM[chave] ?? 99;
+  const t = normalizarTexto(tipo);
+  if (t.includes("01") || t.includes("materia")) return 1;
+  if (t.includes("02") || t.includes("embalagem")) return 2;
+  if (t.includes("00") || t.includes("revenda") || t.includes("mercadoria")) return 3;
+  if (t.includes("10") || t.includes("outros")) return 4;
+  return 5;
+}
+
+function prepararCardsComprar(cards: DashboardCard[]) {
+  return [...cards].filter(precisaReposicao).sort((a, b) => {
+    const porTipo = ordemTipo(a.tipo) - ordemTipo(b.tipo);
+    if (porTipo !== 0) return porTipo;
+    return normalizarTexto(a.descricao).localeCompare(normalizarTexto(b.descricao), "pt-BR");
+  });
 }
 
 function Compras({ cards, onEmitirCotacao }: { cards: DashboardCard[]; onEmitirCotacao: (i: DashboardCard) => void }) {
   if (!cards.length) return <div className="notice">Nenhum item com necessidade de compra foi encontrado.</div>;
-  const cardsOrdenados = [...cards].sort((a, b) => ordemTipo(a.tipo) - ordemTipo(b.tipo));
+  const cardsOrdenados = cards;
   return (
     <section className="card-grid">
       {cardsOrdenados.map((item) => (
