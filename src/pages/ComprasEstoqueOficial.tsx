@@ -58,12 +58,18 @@ export default function ComprasEstoque() {
         getDashboardCompras(500),
         getListasBasicas(),
         listarCotacoes(30),
-        getFornecedores("", 200),
+        getFornecedores("", 10000),
       ]);
       setCards(prepararCardsComprar(dashboard.cards || []));
       setListas(listasBasicas);
       setCotacoes(cotacoesResp.cotacoes);
-      setFornecedores(fornResp.fornecedores.filter((f) => f.email));
+      setFornecedores(
+  [...fornResp.fornecedores]
+    .filter((f) => f.email)
+    .sort((a, b) =>
+      normalizarTexto(a.nome).localeCompare(normalizarTexto(b.nome), "pt-BR")
+    )
+);
     } catch (error) {
       setErro(error instanceof Error ? error.message : "Erro ao carregar dados.");
     } finally {
@@ -357,7 +363,25 @@ function prepararCardsComprar(cards: DashboardCard[]) {
     return normalizarTexto(a.descricao).localeCompare(normalizarTexto(b.descricao), "pt-BR");
   });
 }
+function ordenarFornecedores(fornecedores: Fornecedor[]) {
+  return [...fornecedores].sort((a, b) =>
+    normalizarTexto(a.nome).localeCompare(normalizarTexto(b.nome), 'pt-BR')
+  );
+}
 
+function fornecedorCombinaBusca(fornecedor: Fornecedor, busca: string) {
+  const termo = normalizarTexto(busca);
+
+  if (!termo) return true;
+
+  const textoFornecedor = normalizarTexto([
+    fornecedor.codigo,
+    fornecedor.nome,
+    fornecedor.email,
+  ].join(' '));
+
+  return textoFornecedor.includes(termo);
+}
 function Compras({ cards, onEmitirCotacao }: { cards: DashboardCard[]; onEmitirCotacao: (i: DashboardCard) => void }) {
   if (!cards.length) return <div className="notice">Nenhum item com necessidade de compra foi encontrado.</div>;
   const cardsOrdenados = cards;
@@ -470,12 +494,27 @@ function EmitirCotacaoModal({
 }) {
   const [quantidade, setQuantidade] = useState(String(item.qtdAComprar || ""));
   const [embalagem, setEmbalagem] = useState(embalagens[0] || "");
-  const [fornecedorCodigo, setFornecedorCodigo] = useState("");
-  const [selecionados, setSelecionados] = useState<Fornecedor[]>([]);
-  const [salvando, setSalvando] = useState(false);
-  const [erroModal, setErroModal] = useState<string | null>(null);
+const [fornecedorCodigo, setFornecedorCodigo] = useState("");
+const [buscaFornecedor, setBuscaFornecedor] = useState("");
+const [selecionados, setSelecionados] = useState<Fornecedor[]>([]);
+const [salvando, setSalvando] = useState(false);
+const [erroModal, setErroModal] = useState<string | null>(null);
 
-  const fSelecionado = fornecedores.find((f) => f.codigo === fornecedorCodigo);
+const fornecedoresFiltrados = fornecedores.filter((fornecedor) => {
+  const termo = normalizarTexto(buscaFornecedor);
+
+  if (!termo) return true;
+
+  const textoFornecedor = normalizarTexto([
+    fornecedor.codigo,
+    fornecedor.nome,
+    fornecedor.email,
+  ].join(" "));
+
+  return textoFornecedor.includes(termo);
+});
+
+const fSelecionado = fornecedores.find((f) => f.codigo === fornecedorCodigo);
 
   function adicionar() {
     if (!fSelecionado) return setErroModal("Selecione um fornecedor.");
@@ -528,17 +567,48 @@ function EmitirCotacaoModal({
               {embalagens.map((o) => <option key={o} value={o}>{o}</option>)}
             </select>
           </label>
-          <label>
-            Fornecedor
-            <select value={fornecedorCodigo} onChange={(e) => setFornecedorCodigo(e.target.value)}>
-              <option value="">Selecione...</option>
-              {fornecedores.map((f) => <option key={f.codigo} value={f.codigo}>{f.nome}</option>)}
-            </select>
-          </label>
-          <label>
-            E-mail
-            <input value={fSelecionado?.email || ""} readOnly placeholder="Preenchido automaticamente" />
-          </label>
+         <label>
+  Buscar fornecedor
+  <input
+    value={buscaFornecedor}
+    onChange={(e) => {
+      setBuscaFornecedor(e.target.value);
+      setFornecedorCodigo("");
+    }}
+    placeholder="Digite parte do nome, código ou e-mail"
+  />
+</label>
+<label>
+  Buscar fornecedor
+  <input
+    value={buscaFornecedor}
+    onChange={(e) => {
+      setBuscaFornecedor(e.target.value);
+      setFornecedorCodigo("");
+    }}
+    placeholder="Digite parte do nome, código ou e-mail"
+  />
+</label>
+          
+<label>
+  Fornecedor
+  <select value={fornecedorCodigo} onChange={(e) => setFornecedorCodigo(e.target.value)}>
+    <option value="">Selecione...</option>
+    {fornecedoresFiltrados.map((f) => (
+      <option key={f.codigo} value={f.codigo}>
+        {f.nome} - {f.codigo}
+      </option>
+    ))}
+  </select>
+  <small>
+    Mostrando {fornecedoresFiltrados.length} fornecedor(es) encontrado(s).
+  </small>
+</label>
+
+<label>
+  E-mail
+  <input value={fSelecionado?.email || ""} readOnly placeholder="Preenchido automaticamente" />
+</label>
           <div className="full-width">
             <button className="secondary-button" type="button" onClick={adicionar}>Adicionar fornecedor</button>
           </div>
