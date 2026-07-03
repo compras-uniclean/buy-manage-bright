@@ -9,6 +9,8 @@ import {
   getListasBasicas,
   ListasBasicas,
   listarCotacoes,
+  listarRetornosCotacao,
+  RetornoCotacao,
   criarCotacao,
   enviarCotacoes,
   retornarFornecedor,
@@ -30,6 +32,7 @@ export default function ComprasEstoque() {
   const [aba, setAba] = useState<Aba>("compras");
   const [cards, setCards] = useState<DashboardCard[]>([]);
   const [cotacoes, setCotacoes] = useState<Cotacao[]>([]);
+  const [retornosCotacao, setRetornosCotacao] = useState<RetornoCotacao[]>([]);
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [listas, setListas] = useState<ListasBasicas | null>(null);
   const [cardSelecionado, setCardSelecionado] = useState<DashboardCard | null>(null);
@@ -54,15 +57,17 @@ export default function ComprasEstoque() {
     try {
       setCarregando(true);
       setErro(null);
-      const [dashboard, listasBasicas, cotacoesResp, fornResp] = await Promise.all([
-        getDashboardCompras(500),
-        getListasBasicas(),
-        listarCotacoes(30),
-        getFornecedores("", 10000),
-      ]);
+      const [dashboard, listasBasicas, cotacoesResp, retornosResp, fornResp] = await Promise.all([
+      getDashboardCompras(500),
+      getListasBasicas(),
+      listarCotacoes(30),
+      listarRetornosCotacao(200),
+      getFornecedores("", 10000),
+    ]);
       setCards(prepararCardsComprar(dashboard.cards || []));
       setListas(listasBasicas);
       setCotacoes(cotacoesResp.cotacoes);
+      setRetornosCotacao(retornosResp.retornos || []);
       setFornecedores(
   [...fornResp.fornecedores]
     .filter((f) => f.email)
@@ -76,7 +81,15 @@ export default function ComprasEstoque() {
       setCarregando(false);
     }
   }
+function getRetornosDaCotacao(cotacao: Cotacao) {
+  const idsFornecedores = new Set(
+    cotacao.fornecedores.map((fornecedor) => fornecedor.idCotacaoFornecedor)
+  );
 
+  return retornosCotacao.filter((retorno) =>
+    idsFornecedores.has(retorno.codigoCotacaoFornecedor)
+  );
+}
   useEffect(() => {
     function syncConfig() {
       const ok = hasAppsScriptConfig();
@@ -233,6 +246,7 @@ export default function ComprasEstoque() {
       {!carregando && aba === "cotacoes" ? (
         <Cotacoes
           cotacoes={cotacoes}
+          retornosCotacao={retornosCotacao}
           onEnviarCotacao={handleEnviarCotacao}
           onResponderFornecedor={setFornecedorRetorno}
           cotacaoEnviando={cotacaoEnviando}
@@ -410,11 +424,13 @@ function Compras({ cards, onEmitirCotacao }: { cards: DashboardCard[]; onEmitirC
 
 function Cotacoes({
   cotacoes,
+  retornosCotacao,
   onEnviarCotacao,
   onResponderFornecedor,
   cotacaoEnviando,
 }: {
   cotacoes: Cotacao[];
+  retornosCotacao: RetornoCotacao[];
   onEnviarCotacao: (id: string) => void;
   onResponderFornecedor: (p: FornecedorRetornoSelecionado) => void;
   cotacaoEnviando: string | null;
@@ -424,8 +440,17 @@ function Cotacoes({
     <section className="card-grid">
       {cotacoes.map((cotacao) => {
         const podeEnviar = cotacao.status === "Criada";
-        const enviandoEsta = cotacaoEnviando === cotacao.idCotacao;
-        return (
+const enviandoEsta = cotacaoEnviando === cotacao.idCotacao;
+
+const idsFornecedores = new Set(
+  cotacao.fornecedores.map((fornecedor) => fornecedor.idCotacaoFornecedor)
+);
+
+const retornosDaCotacao = retornosCotacao.filter((retorno) =>
+  idsFornecedores.has(retorno.codigoCotacaoFornecedor)
+);
+
+return (
           <article className="card" key={cotacao.idCotacao}>
             <h2>{cotacao.descricaoItem}</h2>
             <p><strong>ID:</strong> {cotacao.idCotacao}</p>
@@ -444,6 +469,26 @@ function Cotacoes({
                 ))}
               </div>
             ) : null}
+            {retornosDaCotacao.length ? (
+  <div className="quotation-returns">
+    <strong>Retornos recebidos</strong>
+
+    {retornosDaCotacao.map((retorno) => (
+      <div className="return-card" key={retorno.codigoCotacaoFornecedor}>
+        <p><strong>{retorno.nomeFornecedor}</strong></p>
+        <p><strong>Valor:</strong> R$ {retorno.valorUnitario}</p>
+        <p><strong>IPI:</strong> {retorno.ipi}</p>
+        <p><strong>ICMS:</strong> {retorno.icms}</p>
+        <p><strong>Qtd. faturar:</strong> {retorno.quantidadeFaturar}</p>
+        <p><strong>Volumes:</strong> {retorno.quantidadeVolumes}</p>
+        <p><strong>Condição:</strong> {retorno.condicaoPagamento}</p>
+        <p><strong>Prev. faturamento:</strong> {retorno.previsaoFaturamento}</p>
+        <p><strong>Frete:</strong> {retorno.tipoFrete}</p>
+        <p><strong>Situação:</strong> {retorno.situacao}</p>
+      </div>
+    ))}
+  </div>
+) : null}
             <div className="card-actions">
               <button
                 className="primary-button"
