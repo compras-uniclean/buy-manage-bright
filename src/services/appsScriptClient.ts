@@ -128,6 +128,34 @@ export type EnviarCotacoesResponse = {
   envioReal: boolean;
 };
 
+export type RetornoCotacao = {
+  carimbo: string;
+  produtoValidoAte: string;
+  codigoItem: string;
+  descricaoItem: string;
+  quantidadeSolicitada: string;
+  codigoCotacaoFornecedor: string;
+  nomeVendedor: string;
+  quantidadeFaturar: string;
+  quantidadeVolumes: string;
+  valorUnitario: string;
+  ipi: string;
+  icms: string;
+  condicaoPagamento: string;
+  cnpjEmitente: string;
+  previsaoFaturamento: string;
+  tipoFrete: string;
+  codigoFornecedor: string;
+  nomeFornecedor: string;
+  situacao: string;
+  valorReal: string;
+};
+
+export type ListarRetornosCotacaoResponse = {
+  total: number;
+  retornos: RetornoCotacao[];
+};
+
 export type RetornoFornecedorTipo =
   | 'aprovada'
   | 'prazo_expirado'
@@ -244,6 +272,10 @@ export function getListasBasicas() {
 
 export function listarCotacoes(limite = 30) {
   return request<ListarCotacoesResponse>('listarCotacoes', { limite });
+}
+
+export function listarRetornosCotacao(limite = 200) {
+  return request<ListarRetornosCotacaoResponse>('listarRetornosCotacao', { limite });
 }
 
 export function criarCotacao(payload: CriarCotacaoPayload) {
