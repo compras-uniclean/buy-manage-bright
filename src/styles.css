@@ -429,3 +429,34 @@ button:disabled {
     grid-row: auto;
   }
 }
+.quotation-returns {
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  background: #eff6ff;
+}
+
+.quotation-returns > strong {
+  display: block;
+  margin-bottom: 10px;
+  color: #1e3a8a;
+}
+
+.return-card {
+  padding: 12px;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  background: #ffffff;
+  margin-top: 10px;
+}
+
+.return-card p {
+  margin: 4px 0;
+  font-size: 14px;
+}
+
+.return-card p:first-child {
+  margin-bottom: 8px;
+  font-size: 15px;
+}
