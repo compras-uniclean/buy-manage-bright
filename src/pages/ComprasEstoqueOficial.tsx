@@ -532,10 +532,15 @@ function Cotacoes({
   onAprovarRetorno: (idCotacaoFornecedor: string) => void;
   cotacaoEnviando: string | null;
 }) {
+  const cotacoesEmAberto = cotacoes.filter((cotacao) =>
+  !cotacao.fornecedores.some((fornecedor) =>
+    ["Aprovado", "Cotação Aprovada"].includes(fornecedor.status)
+  )
+);
   if (!cotacoes.length) return <div className="notice">Nenhuma cotação criada pelo aplicativo até agora.</div>;
   return (
     <section className="card-grid">
-      {cotacoes.map((cotacao) => {
+      {cotacoesEmAberto.map((cotacao) => {
         const podeEnviar = cotacao.status === "Criada";
 const enviandoEsta = cotacaoEnviando === cotacao.idCotacao;
 
@@ -582,13 +587,19 @@ return (
         <p><strong>Prev. faturamento:</strong> {retorno.previsaoFaturamento}</p>
         <p><strong>Frete:</strong> {retorno.tipoFrete}</p>
         <p><strong>Situação:</strong> {retorno.situacao}</p>
-        <button
-  className="primary-button"
-  type="button"
-  onClick={() => onAprovarRetorno(retorno.codigoCotacaoFornecedor)}
->
-  Aprovar cotação
-</button>
+        {retorno.situacao !== "Aprovado" && retorno.situacao !== "Cotação Aprovada" ? (
+  <button
+    className="primary-button"
+    type="button"
+    onClick={() => onAprovarRetorno(retorno.codigoCotacaoFornecedor)}
+  >
+    Aprovar cotação
+  </button>
+) : (
+  <div className="approved-badge">
+    Cotação aprovada
+  </div>
+)}
       </div>
     ))}
   </div>
