@@ -37,6 +37,8 @@ export default function ComprasEstoque() {
   const [listas, setListas] = useState<ListasBasicas | null>(null);
   const [cardSelecionado, setCardSelecionado] = useState<DashboardCard | null>(null);
   const [fornecedorRetorno, setFornecedorRetorno] = useState<FornecedorRetornoSelecionado | null>(null);
+  const [aprovacaoCotacaoFornecedor, setAprovacaoCotacaoFornecedor] = useState<string | null>(null);
+  const [numeroOcAprovacao, setNumeroOcAprovacao] = useState("");
   const [cotacaoEnviando, setCotacaoEnviando] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -176,13 +178,40 @@ function getRetornosDaCotacao(cotacao: Cotacao) {
       setErro(error instanceof Error ? error.message : "Erro ao registrar retorno.");
     }
   }
-  async function handleAprovarRetorno(idCotacaoFornecedor: string) {
-  await handleRetornarFornecedor({
-    idCotacaoFornecedor,
-    retorno: "aprovada",
-    numeroOc: "",
-    motivoOutros: "",
-  });
+  function handleAprovarRetorno(idCotacaoFornecedor: string) {
+  setAprovacaoCotacaoFornecedor(idCotacaoFornecedor);
+  setNumeroOcAprovacao("");
+}
+
+async function handleConfirmarAprovacao() {
+  if (!aprovacaoCotacaoFornecedor) return;
+
+  if (!numeroOcAprovacao.trim()) {
+    setErro("Informe o número da O.C.");
+    return;
+  }
+
+  try {
+    setErro(null);
+    setSucesso(null);
+
+    const response = await retornarFornecedor({
+      idCotacaoFornecedor: aprovacaoCotacaoFornecedor,
+      retorno: "aprovada",
+      numeroOc: numeroOcAprovacao.trim(),
+      motivoOutros: "",
+    });
+
+    setSucesso(
+      `${response.fornecedor} atualizado para ${response.status}. O.C.: ${numeroOcAprovacao.trim()}.`,
+    );
+
+    setAprovacaoCotacaoFornecedor(null);
+    setNumeroOcAprovacao("");
+    await carregarDados();
+  } catch (error) {
+    setErro(error instanceof Error ? error.message : "Erro ao aprovar cotação.");
+  }
 }
   return (
     <main className="app-shell">
@@ -281,16 +310,74 @@ function getRetornosDaCotacao(cotacao: Cotacao) {
       ) : null}
 
       {fornecedorRetorno ? (
-        <ResponderFornecedorModal
-          cotacao={fornecedorRetorno.cotacao}
-          fornecedor={fornecedorRetorno.fornecedor}
-          onClose={() => setFornecedorRetorno(null)}
-          onConfirm={handleRetornarFornecedor}
+  <ResponderFornecedorModal
+    cotacao={fornecedorRetorno.cotacao}
+    fornecedor={fornecedorRetorno.fornecedor}
+    onClose={() => setFornecedorRetorno(null)}
+    onConfirm={handleRetornarFornecedor}
+  />
+) : null}
+
+{aprovacaoCotacaoFornecedor ? (
+  <div className="modal-backdrop">
+    <form
+      className="modal-card"
+      onSubmit={(e) => {
+        e.preventDefault();
+        handleConfirmarAprovacao();
+      }}
+    >
+      <button
+        className="modal-close"
+        type="button"
+        onClick={() => {
+          setAprovacaoCotacaoFornecedor(null);
+          setNumeroOcAprovacao("");
+        }}
+      >
+        ×
+      </button>
+
+      <h2>Informar número da O.C.</h2>
+
+      <p>
+        Informe o número da Ordem de Compra já gerada no sistema externo.
+        Esse número ficará vinculado à cotação aprovada.
+      </p>
+
+      <label>
+        Número da O.C.
+        <input
+          value={numeroOcAprovacao}
+          onChange={(e) => setNumeroOcAprovacao(e.target.value)}
+          placeholder="Ex.: OC-12345"
+          autoFocus
         />
-      ) : null}
-      {configOpen ? (
-        <ConfigConexaoModal onClose={() => setConfigOpen(false)} />
-      ) : null}
+      </label>
+
+      <div className="modal-actions">
+        <button
+          className="secondary-button"
+          type="button"
+          onClick={() => {
+            setAprovacaoCotacaoFornecedor(null);
+            setNumeroOcAprovacao("");
+          }}
+        >
+          Cancelar
+        </button>
+
+        <button className="primary-button" type="submit">
+          Confirmar aprovação
+        </button>
+      </div>
+    </form>
+  </div>
+) : null}
+
+{configOpen ? (
+  <ConfigConexaoModal onClose={() => setConfigOpen(false)} />
+) : null}
     </main>
   );
 }
