@@ -176,7 +176,14 @@ function getRetornosDaCotacao(cotacao: Cotacao) {
       setErro(error instanceof Error ? error.message : "Erro ao registrar retorno.");
     }
   }
-
+  async function handleAprovarRetorno(idCotacaoFornecedor: string) {
+  await handleRetornarFornecedor({
+    idCotacaoFornecedor,
+    retorno: "aprovada",
+    numeroOc: "",
+    motivoOutros: "",
+  });
+}
   return (
     <main className="app-shell">
       <header className="app-header">
@@ -249,6 +256,7 @@ function getRetornosDaCotacao(cotacao: Cotacao) {
           retornosCotacao={retornosCotacao}
           onEnviarCotacao={handleEnviarCotacao}
           onResponderFornecedor={setFornecedorRetorno}
+          onAprovarRetorno={handleAprovarRetorno}
           cotacaoEnviando={cotacaoEnviando}
         />
       ) : null}
@@ -427,12 +435,14 @@ function Cotacoes({
   retornosCotacao,
   onEnviarCotacao,
   onResponderFornecedor,
+  onAprovarRetorno,
   cotacaoEnviando,
 }: {
   cotacoes: Cotacao[];
   retornosCotacao: RetornoCotacao[];
   onEnviarCotacao: (id: string) => void;
   onResponderFornecedor: (p: FornecedorRetornoSelecionado) => void;
+  onAprovarRetorno: (idCotacaoFornecedor: string) => void;
   cotacaoEnviando: string | null;
 }) {
   if (!cotacoes.length) return <div className="notice">Nenhuma cotação criada pelo aplicativo até agora.</div>;
@@ -485,6 +495,13 @@ return (
         <p><strong>Prev. faturamento:</strong> {retorno.previsaoFaturamento}</p>
         <p><strong>Frete:</strong> {retorno.tipoFrete}</p>
         <p><strong>Situação:</strong> {retorno.situacao}</p>
+        <button
+  className="primary-button"
+  type="button"
+  onClick={() => onAprovarRetorno(retorno.codigoCotacaoFornecedor)}
+>
+  Aprovar cotação
+</button>
       </div>
     ))}
   </div>
