@@ -290,8 +290,8 @@ async function handleConfirmarAprovacao() {
         />
       ) : null}
       {!carregando && aba === "ordens" ? (
-        <div className="notice">A aba de Ordens de Compra será ligada quando a ação correspondente estiver disponível no Apps Script.</div>
-      ) : null}
+  <OrdensCompra cotacoes={cotacoes} />
+) : null}
       {!carregando && aba === "recebimento" ? (
         <div className="notice">A aba de Recebimento será ligada quando a ação correspondente estiver disponível no Apps Script.</div>
       ) : null}
@@ -516,7 +516,97 @@ function Compras({ cards, onEmitirCotacao }: { cards: DashboardCard[]; onEmitirC
     </section>
   );
 }
+function OrdensCompra({ cotacoes }: { cotacoes: Cotacao[] }) {
+  const ordens = new Map<
+    string,
+    {
+      numeroOc: string;
+      fornecedores: Set<string>;
+      itens: Array<{
+        codigoItem: string;
+        descricaoItem: string;
+        quantidade: number;
+        embalagem: string;
+        situacao: string;
+      }>;
+    }
+  >();
 
+  cotacoes.forEach((cotacao) => {
+    cotacao.fornecedores.forEach((fornecedor) => {
+      const aprovado = ["Aprovado", "Cotação Aprovada"].includes(fornecedor.status);
+      const numeroOc = fornecedor.numeroOc?.trim();
+
+      if (!aprovado || !numeroOc) return;
+
+      if (!ordens.has(numeroOc)) {
+        ordens.set(numeroOc, {
+          numeroOc,
+          fornecedores: new Set<string>(),
+          itens: [],
+        });
+      }
+
+      const ordem = ordens.get(numeroOc);
+
+      if (!ordem) return;
+
+      ordem.fornecedores.add(fornecedor.nomeFornecedor);
+
+      ordem.itens.push({
+        codigoItem: cotacao.codigoItem,
+        descricaoItem: cotacao.descricaoItem,
+        quantidade: fornecedor.quantidadeSolicitada || cotacao.quantidadeSolicitada,
+        embalagem: fornecedor.embalagem || cotacao.embalagem,
+        situacao: "Aguardando chegada",
+      });
+    });
+  });
+
+  const ordensLista = Array.from(ordens.values());
+
+  if (!ordensLista.length) {
+    return <div className="notice">Nenhuma Ordem de Compra aprovada até o momento.</div>;
+  }
+
+  return (
+    <section className="card-grid">
+      {ordensLista.map((ordem) => (
+        <article className="card" key={ordem.numeroOc}>
+          <h2>O.C.: {ordem.numeroOc}</h2>
+
+          <p>
+            <strong>Fornecedor:</strong>{" "}
+            {Array.from(ordem.fornecedores).join(", ")}
+          </p>
+
+          <div className="oc-items">
+            <strong>Itens</strong>
+
+            {ordem.itens.map((item, index) => (
+              <div className="oc-item" key={`${ordem.numeroOc}-${item.codigoItem}-${index}`}>
+                <p>
+                  <strong>{item.descricaoItem}</strong>
+                </p>
+
+                <p>
+                  <strong>Código:</strong> {item.codigoItem}
+                </p>
+
+                <p>
+                  <strong>Quantidade:</strong>{" "}
+                  {item.quantidade.toLocaleString("pt-BR")} {item.embalagem}
+                </p>
+
+                <span className="oc-status">{item.situacao}</span>
+              </div>
+            ))}
+          </div>
+        </article>
+      ))}
+    </section>
+  );
+}
 function Cotacoes({
   cotacoes,
   retornosCotacao,
