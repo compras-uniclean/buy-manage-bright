@@ -14,7 +14,9 @@ import {
   criarCotacao,
   enviarCotacoes,
   retornarFornecedor,
+  acusarRecebimento,
   RetornoFornecedorTipo,
+  StatusRecebimento,
   getAppsScriptConfig,
   setAppsScriptConfig,
   hasAppsScriptConfig,
@@ -28,6 +30,15 @@ type FornecedorRetornoSelecionado = {
   fornecedor: CotacaoFornecedor;
 };
 
+type RecebimentoSelecionado = {
+  numeroOc: string;
+  fornecedor: string;
+  idCotacaoFornecedor: string;
+  codigoItem: string;
+  descricaoItem: string;
+  quantidadePrevista: number;
+  embalagem: string;
+};
 export default function ComprasEstoque() {
   const [aba, setAba] = useState<Aba>("compras");
   const [cards, setCards] = useState<DashboardCard[]>([]);
@@ -39,6 +50,11 @@ export default function ComprasEstoque() {
   const [fornecedorRetorno, setFornecedorRetorno] = useState<FornecedorRetornoSelecionado | null>(null);
   const [aprovacaoCotacaoFornecedor, setAprovacaoCotacaoFornecedor] = useState<string | null>(null);
   const [numeroOcAprovacao, setNumeroOcAprovacao] = useState("");
+  const [recebimentoSelecionado, setRecebimentoSelecionado] = useState<RecebimentoSelecionado | null>(null);
+  const [statusRecebimento, setStatusRecebimento] = useState<StatusRecebimento>("recebido");
+  const [quantidadeRecebida, setQuantidadeRecebida] = useState("");
+  const [motivoRecebimento, setMotivoRecebimento] = useState("");
+  const [observacoesRecebimento, setObservacoesRecebimento] = useState("");
   const [cotacaoEnviando, setCotacaoEnviando] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -213,6 +229,61 @@ async function handleConfirmarAprovacao() {
     setErro(error instanceof Error ? error.message : "Erro ao aprovar cotação.");
   }
 }
+  function handleAbrirRecebimento(item: RecebimentoSelecionado) {
+  setRecebimentoSelecionado(item);
+  setStatusRecebimento("recebido");
+  setQuantidadeRecebida(String(item.quantidadePrevista));
+  setMotivoRecebimento("");
+  setObservacoesRecebimento("");
+}
+
+async function handleConfirmarRecebimento() {
+  if (!recebimentoSelecionado) return;
+
+  const quantidade = Number(
+    quantidadeRecebida.replace(/\./g, "").replace(",", ".")
+  );
+
+  if (!quantidadeRecebida.trim() || Number.isNaN(quantidade)) {
+    setErro("Informe uma quantidade recebida válida.");
+    return;
+  }
+
+  const exigeMotivo = statusRecebimento !== "recebido";
+
+  if (exigeMotivo && !motivoRecebimento.trim()) {
+    setErro("Informe o motivo/observação para este tipo de recebimento.");
+    return;
+  }
+
+  try {
+    setErro(null);
+    setSucesso(null);
+
+    const response = await acusarRecebimento({
+      numeroOc: recebimentoSelecionado.numeroOc,
+      codigoItem: recebimentoSelecionado.codigoItem,
+      descricaoItem: recebimentoSelecionado.descricaoItem,
+      quantidadePrevista: recebimentoSelecionado.quantidadePrevista,
+      quantidadeRecebida: quantidade,
+      statusRecebimento,
+      motivo: motivoRecebimento,
+      observacoes: observacoesRecebimento,
+    });
+
+    setSucesso(response.mensagem || "Recebimento registrado com sucesso.");
+
+    setRecebimentoSelecionado(null);
+    setStatusRecebimento("recebido");
+    setQuantidadeRecebida("");
+    setMotivoRecebimento("");
+    setObservacoesRecebimento("");
+
+    await carregarDados();
+  } catch (error) {
+    setErro(error instanceof Error ? error.message : "Erro ao registrar recebimento.");
+  }
+}
   return (
     <main className="app-shell">
       <header className="app-header">
@@ -292,8 +363,11 @@ async function handleConfirmarAprovacao() {
       {!carregando && aba === "ordens" ? (
   <OrdensCompra cotacoes={cotacoes} />
 ) : null}
-     {!carregando && aba === "recebimento" ? (
-  <Recebimento cotacoes={cotacoes} />
+    {!carregando && aba === "recebimento" ? (
+  <Recebimento
+    cotacoes={cotacoes}
+    onRegistrarRecebimento={handleAbrirRecebimento}
+  />
 ) : null}
       {!carregando && aba === "historico" ? (
         <Historico cotacoes={cotacoes} />
@@ -374,7 +448,108 @@ async function handleConfirmarAprovacao() {
     </form>
   </div>
 ) : null}
+{recebimentoSelecionado ? (
+  <div className="modal-backdrop">
+    <div className="modal-card">
+      <h2>Registrar recebimento</h2>
 
+      <p>
+        <strong>O.C.:</strong> {recebimentoSelecionado.numeroOc}
+      </p>
+
+      <p>
+        <strong>Fornecedor:</strong> {recebimentoSelecionado.fornecedor}
+      </p>
+
+      <p>
+        <strong>Item:</strong> {recebimentoSelecionado.descricaoItem}
+      </p>
+
+      <p>
+        <strong>Código:</strong> {recebimentoSelecionado.codigoItem}
+      </p>
+
+      <p>
+        <strong>Quantidade prevista:</strong>{" "}
+        {recebimentoSelecionado.quantidadePrevista.toLocaleString("pt-BR")}{" "}
+        {recebimentoSelecionado.embalagem}
+      </p>
+
+      <label>
+        Tipo de recebimento
+        <select
+          value={statusRecebimento}
+          onChange={(event) => {
+            const novoStatus = event.target.value as StatusRecebimento;
+            setStatusRecebimento(novoStatus);
+
+            if (novoStatus === "recebido") {
+              setQuantidadeRecebida(String(recebimentoSelecionado.quantidadePrevista));
+            }
+
+            if (novoStatus === "devolucao_integral") {
+              setQuantidadeRecebida("0");
+            }
+          }}
+        >
+          <option value="recebido">Recebido total</option>
+          <option value="recebido_parcialmente">Veio a menos / parcial</option>
+          <option value="recebido_a_mais">Veio a mais</option>
+          <option value="devolucao_parcial">Devolução parcial</option>
+          <option value="devolucao_integral">Devolução integral</option>
+        </select>
+      </label>
+
+      <label>
+        Quantidade recebida
+        <input
+          value={quantidadeRecebida}
+          onChange={(event) => setQuantidadeRecebida(event.target.value)}
+          placeholder="Ex.: 1000"
+        />
+      </label>
+
+      {statusRecebimento !== "recebido" ? (
+        <label>
+          Motivo / justificativa
+          <textarea
+            value={motivoRecebimento}
+            onChange={(event) => setMotivoRecebimento(event.target.value)}
+            placeholder="Explique a divergência, devolução ou recebimento parcial."
+          />
+        </label>
+      ) : null}
+
+      <label>
+        Observações adicionais
+        <textarea
+          value={observacoesRecebimento}
+          onChange={(event) => setObservacoesRecebimento(event.target.value)}
+          placeholder="Opcional"
+        />
+      </label>
+
+      <div className="modal-actions">
+        <button
+          className="secondary-button"
+          type="button"
+          onClick={() => {
+            setRecebimentoSelecionado(null);
+            setQuantidadeRecebida("");
+            setMotivoRecebimento("");
+            setObservacoesRecebimento("");
+          }}
+        >
+          Cancelar
+        </button>
+
+        <button type="button" onClick={handleConfirmarRecebimento}>
+          Confirmar recebimento
+        </button>
+      </div>
+    </div>
+  </div>
+) : null}
 {configOpen ? (
   <ConfigConexaoModal onClose={() => setConfigOpen(false)} />
 ) : null}
@@ -607,7 +782,13 @@ function OrdensCompra({ cotacoes }: { cotacoes: Cotacao[] }) {
     </section>
   );
 }
-function Recebimento({ cotacoes }: { cotacoes: Cotacao[] }) {
+function Recebimento({
+  cotacoes,
+  onRegistrarRecebimento,
+}: {
+  cotacoes: Cotacao[];
+  onRegistrarRecebimento: (item: RecebimentoSelecionado) => void;
+}) {
   const ordens = new Map<
     string,
     {
@@ -694,9 +875,23 @@ function Recebimento({ cotacoes }: { cotacoes: Cotacao[] }) {
                 <span className="oc-status">{item.situacao}</span>
 
                 <div className="card-actions">
-                  <button className="secondary-button" type="button" disabled>
-                    Registrar recebimento
-                  </button>
+                 <button
+  className="secondary-button"
+  type="button"
+  onClick={() =>
+    onRegistrarRecebimento({
+      numeroOc: ordem.numeroOc,
+      fornecedor: Array.from(ordem.fornecedores).join(", "),
+      idCotacaoFornecedor: item.idCotacaoFornecedor,
+      codigoItem: item.codigoItem,
+      descricaoItem: item.descricaoItem,
+      quantidadePrevista: item.quantidade,
+      embalagem: item.embalagem,
+    })
+  }
+>
+  Registrar recebimento
+</button>
                 </div>
               </div>
             ))}
