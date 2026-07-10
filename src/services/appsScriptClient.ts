@@ -183,6 +183,39 @@ export type RetornarFornecedorResponse = {
   envioReal: boolean;
 };
 
+export type StatusRecebimento =
+  | "recebido"
+  | "recebido_parcialmente"
+  | "recebido_a_mais"
+  | "devolucao_parcial"
+  | "devolucao_integral";
+
+export type AcusarRecebimentoPayload = {
+  numeroOc: string;
+  codigoItem: string;
+  descricaoItem: string;
+  quantidadePrevista: number;
+  quantidadeRecebida: number;
+  statusRecebimento: StatusRecebimento;
+  motivo?: string;
+  insumoExtra?: string;
+  quantidadeExtra?: number;
+  observacoes?: string;
+};
+
+export type AcusarRecebimentoResponse = {
+  mensagem: string;
+  idRecebimento: string;
+  numeroOc: string;
+  codigoItem: string;
+  descricaoItem: string;
+  statusRecebimento: string;
+  statusOc: string;
+  quantidadePrevista: number;
+  quantidadeRecebida: number;
+  quantidadePendente: number;
+  avisarComprador: string;
+};
 const ENV_URL = import.meta.env.VITE_APPS_SCRIPT_URL as string | undefined;
 const ENV_TOKEN = import.meta.env.VITE_APPS_SCRIPT_TOKEN as string | undefined;
 
@@ -304,5 +337,20 @@ export function retornarFornecedor(payload: RetornarFornecedorPayload) {
     retorno: payload.retorno,
     numero_oc: payload.numeroOc || '',
     motivo_outros: payload.motivoOutros || '',
+  });
+}
+export function acusarRecebimento(payload: AcusarRecebimentoPayload) {
+  return request<AcusarRecebimentoResponse>("acusarRecebimento", {
+    numero_oc: payload.numeroOc,
+    codigo_item: payload.codigoItem,
+    descricao_item: payload.descricaoItem,
+    quantidade_prevista: payload.quantidadePrevista,
+    quantidade_recebida: payload.quantidadeRecebida,
+    status_recebimento: payload.statusRecebimento,
+    motivo: payload.motivo || "",
+    insumo_extra: payload.insumoExtra || "",
+    quantidade_extra: payload.quantidadeExtra || 0,
+    criado_por: "Compras",
+    observacoes: payload.observacoes || "",
   });
 }
