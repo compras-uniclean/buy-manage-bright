@@ -543,9 +543,13 @@ async function handleConfirmarRecebimento() {
           Cancelar
         </button>
 
-        <button type="button" onClick={handleConfirmarRecebimento}>
-          Confirmar recebimento
-        </button>
+        <button
+  className="primary-button"
+  type="button"
+  onClick={handleConfirmarRecebimento}
+>
+  Confirmar recebimento
+</button>
       </div>
     </div>
   </div>
