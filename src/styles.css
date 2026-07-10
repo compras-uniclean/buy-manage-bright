@@ -460,3 +460,40 @@ button:disabled {
   margin-bottom: 8px;
   font-size: 15px;
 }
+.oc-items {
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f9fafb;
+}
+
+.oc-items > strong {
+  display: block;
+  margin-bottom: 10px;
+  color: #111827;
+}
+
+.oc-item {
+  padding: 12px;
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+  background: #ffffff;
+  margin-top: 10px;
+}
+
+.oc-item p {
+  margin: 4px 0;
+  font-size: 14px;
+}
+
+.oc-status {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 13px;
+  font-weight: 700;
+}
